@@ -1,4 +1,14 @@
+import logging
+
 from telegram import *
+from telegram.ext import *
+
+logging.basicConfig(
+            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG
+            )
+
+logger = logging.getLogger(__name__)
+
 
 updater = Updater(token="TOKEN")
 dispatcher = updater.dispatcher
@@ -122,35 +132,37 @@ class Character(object):
             self.stats['gold'] = 200
             self.stats['experience'] = 0
 
-def start(bot, update):
+#def start(bot, update):
+def start(update: Update, context: CallbackContext) -> None:
     #Displays "Welcome to Dungeons and Dragons.")
-    bot.sendMessage(chat_id = update.message.chat_id, text = "Welcome to Dungeons and Dragons.")
+    update.message.reply_text('Welcome to Dungeons and Dragons.')
 
-def setDM(bot, update):
+def setDM(update: Update, context: CallbackContext):
     global DM
     if DM == None:
         DM = update.message.from_user.first_name
-        bot.sendMessage(chat_id = update.message.chat_id, text = DM + " has been set as Dungeon Master")
+        update.message.reply_text( DM + " has been set as Dungeon Master")
     else:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "DM " + DM + " has already been set!")
+        update.message.reply_text("DM " + DM + " has already been set!")
 
-def createCharacter(bot, update):
+def createCharacter(update: Update, context: CallbackContext):
     global playerIndex
     if findCharacterIndex(update.message.from_user.first_name) != -1:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "@" + update.message.from_user.first_name + " already has a character")
+        update.message.reply_text("@" + update.message.from_user.first_name + " already has a character")
         return None
     characterName = update.message.text[17:].lower()
     playerName = update.message.from_user.first_name
     characterList.append(Character(playerName, characterName))
     #Displays "Character [Character] has been created [Player]"
-    bot.sendMessage(chat_id = update.message.chat_id, text = "Character " + characterList[playerIndex].characterName + " has been created by " + characterList[playerIndex].playerName)
+    update.message.reply_text("Character " + characterList[playerIndex].characterName + " has been created by " + characterList[playerIndex].playerName)
     playerIndex += 1
     #Displays "@[Player] Please enter your character's attributes in the format of [Race] [Class]"
-    bot.sendMessage(chat_id = update.message.chat_id, text = "@" + playerName + " Please enter your character's Race & Class in the format: [Race] [Class]")
+    update.message.reply_text("@" + playerName + " Please enter your character's Race & Class in the format: [Race] [Class]")
     global attributes
     attributes = True
 
-def incomingMessages(bot, update):
+#def incomingMessages(bot, update):
+def incomingMessages(update: Update, context: CallbackContext):
     global attributes
     if attributes == True:
         attributesInput = update.message.text.lower()
@@ -159,7 +171,7 @@ def incomingMessages(bot, update):
         characterList[i].race = attributesInput[0]
         characterList[i]._class = attributesInput[1]
         #Display "@[Player] [Character]'s race is [Race] and [Character]'s class is [Class]
-        bot.sendMessage(chat_id = update.message.chat_id, text = "@" + characterList[i].playerName + " " + characterList[i].characterName + "'s race is " + characterList[i].race + " and " + characterList[i].characterName + "'s class is "+ characterList[i]._class + ".")
+        update.message.reply_text("@" + characterList[i].playerName + " " + characterList[i].characterName + "'s race is " + characterList[i].race + " and " + characterList[i].characterName + "'s class is "+ characterList[i]._class + ".")
         characterList[i].updateStats(characterList[i].race, characterList[i]._class)
         statsheet = (str(characterList[i].characterName) + "\n Created by: "
                      + str(characterList[i].playerName)
@@ -174,10 +186,10 @@ def incomingMessages(bot, update):
                     + "\n Health: " + str(characterList[i].stats['health'])
                     + "\n Gold: " + str(characterList[i].stats['gold'])
                     + "\n Experience: " + str(characterList[i].stats['experience']))
-        bot.sendMessage(chat_id = update.message.chat_id, text = statsheet)
+        update.message.reply_text(statsheet)
         attributes = False
 
-def printCharacterStats(bot, update):
+def printCharacterStats(update: Update, context: CallbackContext):
     # /printcharacterstats CHARACTER_NAME
     userInput = parseInput(update.message.text, 2)
     i = getIndexFromCharacter(userInput[1])
@@ -194,7 +206,7 @@ def printCharacterStats(bot, update):
         + "\n Health: " + str(characterList[i].stats['health'])
         + "\n Gold: " + str(characterList[i].stats['gold'])
         + "\n Experience: " + str(characterList[i].stats['experience']))
-    bot.sendMessage(chat_id = update.message.chat_id, text = statsheet)
+    update.message.reply_text(statsheet)
 
 def findCharacterIndex(first_name):
     for i in range(len(characterList)):
@@ -202,32 +214,32 @@ def findCharacterIndex(first_name):
             return i
     return -1
 
-def alterHealth(bot, update):
+def alterHealth(update: Update, context: CallbackContext):
     #/changehealth charactername value
     user = update.message.from_user.first_name
     if user != DM:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "You're not authorised to use this command!")
+        update.message.reply_text("You're not authorised to use this command!")
     else:
         userInput = parseInput(update.message.text, 3)
         i = getIndexFromCharacter(userInput[1])
         value = int(userInput[2])
         characterList[i].stats['health'] += value
-        bot.sendMessage(chat_id = update.message.chat_id, text = characterList[i].characterName + "'s health has been changed " + userInput[2] + " to " + str(characterList[i].stats['health']))
+        update.message.reply_text(characterList[i].characterName + "'s health has been changed " + userInput[2] + " to " + str(characterList[i].stats['health']))
 
-def inventoryUpdate(bot, update):
+def inventoryUpdate(update: Update, context: CallbackContext):
     user = update.message.from_user.first_name
     if user != DM:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "You're not authorised to use this command!")
+        update.message.reply_text("You're not authorised to use this command!")
     else:
         inventoryInput = parseInput(update.message.text, 5)
         i = getIndexFromCharacter(inventoryInput[1])
         print (inventoryInput[1] + characterList[i].playerName)
         if inventoryInput[2] == "remove":
             if inventoryInput[3] not in characterList[i].inventory:
-                bot.sendMessage(chat_id = update.message.chat_id, text = "@" + characterList[i].playerName + " You don't have %s in your inventory!" % (inventoryInput[3]))
+                update.message.reply_text("@" + characterList[i].playerName + " You don't have %s in your inventory!" % (inventoryInput[3]))
             elif inventoryInput[3] in characterList[i].inventory:
                 if int(inventoryInput[4]) > characterList[i].inventory[inventoryInput[3]]:
-                    bot.sendMessage(chat_id = update.message.chat_id, text = "@" + characterList[i].playerName + " You don't have enough " + inventoryInput[3] + "!")
+                    update.message.reply_text("@" + characterList[i].playerName + " You don't have enough " + inventoryInput[3] + "!")
                 elif int(inventoryInput[4]) == characterList[i].inventory[inventoryInput[3]]:
                     del characterList[i].inventory[inventoryInput[3]]
                 elif int(inventoryInput[4]) < characterList[i].inventory[inventoryInput[3]]:
@@ -242,9 +254,9 @@ def inventoryUpdate(bot, update):
         text = characterList[i].characterName + "'s Inventory \n"
         for item in items:
             text += item[0] + ": " + str(item[1]) + "\n"
-        bot.sendMessage(chat_id = update.message.chat_id, text = text)
+        update.message.reply_text(text = text)
 
-def printInventory(bot, update):
+def printInventory(update: Update, context: CallbackContext):
     inventoryInput = update.message.text
     inventoryInput = inventoryInput.split()
     name = inventoryInput[1]
@@ -253,33 +265,33 @@ def printInventory(bot, update):
     text = characterList[i].characterName + "'s Inventory \n"
     for item in items:
         text += item[0] + ": " + str(item[1]) + "\n"
-    bot.sendMessage(chat_id = update.message.chat_id, text = text)
+    update.message.reply_text(text)
 
-def alterGold(bot, update):
+def alterGold(update: Update, context: CallbackContext):
     #/changehealth charactername value
     user = update.message.from_user.first_name
     if user != DM:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "You're not authorised to use this command!")
+        update.message.reply_text("You're not authorised to use this command!")
     else:
         userInput = parseInput(update.message.text, 3)
         characterName = userInput[1]
         value = int(userInput[2])
         i = getIndexFromCharacter(characterName)
         characterList[i].stats['gold'] += value
-        bot.sendMessage(chat_id = update.message.chat_id, text = characterList[i].characterName + "'s gold has been changed by" + userInput[2] + " to " + str(characterList[i].stats['gold']))
+        update.message.reply_text(characterList[i].characterName + "'s gold has been changed by" + userInput[2] + " to " + str(characterList[i].stats['gold']))
 
-def alterExperience(bot, update):
+def alterExperience(update: Update, context: CallbackContext):
     #/changeXP characterName value
     user = update.message.from_user.first_name
     if user != DM:
-        bot.sendMessage(chat_id = update.message.chat_id, text = "You're not authorised to use this command!")
+        update.message.reply_text("You're not authorised to use this command!")
     else:
         userInput = parseInput(update.message.text, 3)
         characterName = userInput[1]
         value = int(userInput[2])
         i = getIndexFromCharacter(characterName)
         characterList[i].stats['experience'] += value
-        bot.sendMessage(chat_id = update.message.chat_id, text = characterList[i].characterName + "'s XP has been changed by" + userInput[2] + " to " + str(characterList[i].stats['experience']))
+        update.message.reply_text(characterList[i].characterName + "'s XP has been changed by" + userInput[2] + " to " + str(characterList[i].stats['experience']))
 
 def parseInput(words, no):
     words = words.split()
@@ -298,16 +310,47 @@ def getIndexFromCharacter(name):
     for i in range(len(characterList)):
         if characterList[i].characterName == name:
             return i
+def echo(update: Update, context: CallbackContext) -> None:
+     update.message.reply_text(update.message.text)
 
-dispatcher.addTelegramMessageHandler(incomingMessages)
-dispatcher.addTelegramCommandHandler('start', start)
-dispatcher.addTelegramCommandHandler('setdm', setDM)
-dispatcher.addTelegramCommandHandler('changehealth', alterHealth)
-dispatcher.addTelegramCommandHandler('createcharacter', createCharacter)
-dispatcher.addTelegramCommandHandler('printcharacterstats', printCharacterStats)
-dispatcher.addTelegramCommandHandler('updateinventory', inventoryUpdate)
-dispatcher.addTelegramCommandHandler('printinventory', printInventory)
-dispatcher.addTelegramCommandHandler('changegold',alterGold)
-dispatcher.addTelegramCommandHandler('changexp',alterExperience)
+#def Help(bot, update):
+def Help(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("I am the Dungeons and Dragons bot, and I can help to automate a few processes in your game of D&D to make it easier for everyone to play on Telegram." +
+    "\n Here are a list of commands that I can execute!" +
+    "\n \n Player Commands:" +
+    "\n /start - starts the DnD bot" +
+    "\n /createcharacter [character name] - Use this command and follow the prompts to create a new character" +
+    "\n /printcharacterstats [character name] - Prints a character's stats, add the name of the chharacter after the command" +
+    "\n /help - Open this help message" +
+    "\n /roll[int] - Rolls a dice with the customisable maximum value"
+    "\n \n Dungeon Master Commands:" +
+    "\n /createmonster [monster name] [health points] - Creates a monster." +
+    "\n /attackmonster [monster name] [damage] - Reduces health of the monster by a given number." +
+    "\n /changexp [character name] +/- X - Adds or subtracts a certain amount of health from a character." +
+    "\n /changegold [character name] +/- X - Adds or subtracts a certain amount of gold from a character." +
+    "\n /changehealth [character name] +/- X - Adds or subtacts a certain amount of health from a character."
+    "\n /inventoryupdate [character name] add/remove [item] [no. of item] - Adds or removes a certain amount of a specific item from a character's inventory."
+    "\n /printinventory - Current state of the inventory.")
 
-updater.start_polling()
+
+def main():
+
+### This shit brakes everything: FIX ME
+###   dispatcher.add_handler(MessageHandler(Filters.text, incomingMessages))
+###
+   dispatcher.add_handler(CommandHandler("start", start))
+   dispatcher.add_handler(CommandHandler('setdm', setDM))
+   dispatcher.add_handler(CommandHandler('changehealth', alterHealth))
+   dispatcher.add_handler(CommandHandler('createcharacter', createCharacter))
+   dispatcher.add_handler(CommandHandler('printcharacterstats', printCharacterStats))
+   dispatcher.add_handler(CommandHandler('updateinventory', inventoryUpdate))
+   dispatcher.add_handler(CommandHandler('printinventory', printInventory))
+   dispatcher.add_handler(CommandHandler('changegold',alterGold))
+   dispatcher.add_handler(CommandHandler('changexp',alterExperience))
+   dispatcher.add_handler(CommandHandler("help", Help))
+
+   updater.start_polling()
+   updater.idle()
+
+if __name__ == '__main__':
+    main()
