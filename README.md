@@ -1,17 +1,17 @@
 # DnDBot
-This is a Telegram bot for playing Dungeons and Dragons
+This is a Telegram bot for playing Dungeons and Dragons made by theepicflyer. I'm just trying to fix it (new tg API, new python3, etc).
 
 ## Installation
-Download `main.py`, `monsters.py`, `dice.py`, `help.py` files from `main` folder
+Download files from `main` folder
 The bot uses the [Python Telegram Bot](https://github.com/python-telegram-bot/python-telegram-bot)
 Install it with `pip install python-telegram-bot`
 
 ## Setup
-1. `main.py`, `monsters.py`, `dice.py`, `help.py` in the `main` folder are all required to be run individually to work
+1. `main.py` in the `main` folder will be the only file someday.
 2. Get your own bot and token from [Telegram](https://core.telegram.org/bots)
-3. Replace `TOKEN` in all 4 files with your own token
+3. Replace `TOKEN` with your own token
 4. Add your bot to a group with your players
-5. Run all 4 files for the whole game to work
+5. Run `main`
 
 
 
